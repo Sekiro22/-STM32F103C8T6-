@@ -5,10 +5,9 @@
 /*引脚配置层*/
 
 /**
-  * 函    数：I2C写SCL引脚电平
-  * 参    数：BitValue 协议层传入的当前需要写入SCL的电平，范围0~1
-  * 返 回 值：无
-  * 注意事项：此函数需要用户实现内容，当BitValue为0时，需要置SCL为低电平，当BitValue为1时，需要置SCL为高电平
+  * @brief  设置 BMP280 软件 I2C 的 SCL 引脚 PA6 电平。
+  * @param  BitValue 输入参数；0 表示拉低 PA6，非 0 表示置高 PA6，不是指针不允许为空。
+  * @return 无返回值。
   */
 void MyI2C_W_SCL(uint8_t BitValue)
 {
@@ -17,10 +16,9 @@ void MyI2C_W_SCL(uint8_t BitValue)
 }
 
 /**
-  * 函    数：I2C写SDA引脚电平
-  * 参    数：BitValue 协议层传入的当前需要写入SDA的电平，范围0~0xFF
-  * 返 回 值：无
-  * 注意事项：此函数需要用户实现内容，当BitValue为0时，需要置SDA为低电平，当BitValue非0时，需要置SDA为高电平
+  * @brief  设置 BMP280 软件 I2C 的 SDA 引脚 PA7 电平。
+  * @param  BitValue 输入参数；0 表示拉低 PA7，非 0 表示置高 PA7，不是指针不允许为空。
+  * @return 无返回值。
   */
 void MyI2C_W_SDA(uint8_t BitValue)
 {
@@ -29,10 +27,9 @@ void MyI2C_W_SDA(uint8_t BitValue)
 }
 
 /**
-  * 函    数：I2C读SDA引脚电平
-  * 参    数：无
-  * 返 回 值：协议层需要得到的当前SDA的电平，范围0~1
-  * 注意事项：此函数需要用户实现内容，当前SDA为低电平时，返回0，当前SDA为高电平时，返回1
+  * @brief  读取 BMP280 软件 I2C 的 SDA 引脚 PA7 当前输入电平。
+  * @param  无输入参数；函数固定读取 GPIOA Pin7，不接收外部指针。
+  * @return 返回 0 表示 SDA 当前为低电平，返回 1 表示 SDA 当前为高电平；当前实现没有错误码。
   */
 uint8_t MyI2C_R_SDA(void)
 {
@@ -43,10 +40,9 @@ uint8_t MyI2C_R_SDA(void)
 }
 
 /**
-  * 函    数：I2C初始化
-  * 参    数：无
-  * 返 回 值：无
-  * 注意事项：此函数需要用户实现内容，实现SCL和SDA引脚的初始化
+  * @brief  初始化 BMP280 软件 I2C 引脚，将 PA6/PA7 配置为开漏输出并默认释放为高电平。
+  * @param  无输入参数；函数固定配置 GPIOA、PA6 和 PA7，不接收外部配置对象。
+  * @return 无返回值。
   */
 void MyI2C_Init(void)
 {
@@ -67,9 +63,9 @@ void MyI2C_Init(void)
 /*协议层*/
 
 /**
-  * 函    数：I2C起始
-  * 参    数：无
-  * 返 回 值：无
+  * @brief  产生软件 I2C 起始条件，先释放 SCL/SDA，再在 SCL 高电平期间拉低 SDA 并拉低 SCL 占用总线。
+  * @param  无输入参数；函数直接操作 PA6/PA7，不接收外部对象。
+  * @return 无返回值。
   */
 void MyI2C_Start(void)
 {
@@ -80,9 +76,9 @@ void MyI2C_Start(void)
 }
 
 /**
-  * 函    数：I2C终止
-  * 参    数：无
-  * 返 回 值：无
+  * @brief  产生软件 I2C 停止条件，在 SCL 高电平期间释放 SDA。
+  * @param  无输入参数；函数直接操作 PA6/PA7，不接收外部对象。
+  * @return 无返回值。
   */
 void MyI2C_Stop(void)
 {
@@ -92,9 +88,9 @@ void MyI2C_Stop(void)
 }
 
 /**
-  * 函    数：I2C发送一个字节
-  * 参    数：Byte 要发送的一个字节数据，范围：0x00~0xFF
-  * 返 回 值：无
+  * @brief  按高位在前的顺序通过软件 I2C 发送 1 个字节。
+  * @param  Byte 输入参数；待发送的 8 位数据，不是指针不允许为空，取值范围为 0x00~0xFF。
+  * @return 无返回值。
   */
 void MyI2C_SendByte(uint8_t Byte)
 {
@@ -108,9 +104,9 @@ void MyI2C_SendByte(uint8_t Byte)
 }
 
 /**
-  * 函    数：I2C接收一个字节
-  * 参    数：无
-  * 返 回 值：接收到的一个字节数据，范围：0x00~0xFF
+  * @brief  通过软件 I2C 按高位在前的顺序接收 1 个字节。
+  * @param  无输入参数；函数直接读取 SDA 引脚，不接收外部缓冲区。
+  * @return 返回接收到的 8 位数据，取值范围为 0x00~0xFF；当前实现没有超时和错误码。
   */
 uint8_t MyI2C_ReceiveByte(void)
 {
@@ -127,9 +123,9 @@ uint8_t MyI2C_ReceiveByte(void)
 }
 
 /**
-  * 函    数：I2C发送应答位
-  * 参    数：Byte 要发送的应答位，范围：0~1，0表示应答，1表示非应答
-  * 返 回 值：无
+  * @brief  通过软件 I2C 发送应答位或非应答位。
+  * @param  AckBit 输入参数；0 表示应答 ACK，1 表示非应答 NACK，其他非 0 值按高电平处理；参数不是指针不允许为空。
+  * @return 无返回值。
   */
 void MyI2C_SendAck(uint8_t AckBit)
 {
@@ -139,9 +135,9 @@ void MyI2C_SendAck(uint8_t AckBit)
 }
 
 /**
-  * 函    数：I2C接收应答位
-  * 参    数：无
-  * 返 回 值：接收到的应答位，范围：0~1，0表示应答，1表示非应答
+  * @brief  通过软件 I2C 读取从设备返回的应答位。
+  * @param  无输入参数；函数释放 SDA 后读取引脚状态，不接收外部对象。
+  * @return 返回 0 表示收到 ACK，返回 1 表示收到 NACK；当前实现没有超时和错误码。
   */
 uint8_t MyI2C_ReceiveAck(void)
 {
@@ -155,6 +151,11 @@ uint8_t MyI2C_ReceiveAck(void)
 
 //设置BMP过采样因子 MODE 
 //BMP280_SLEEP_MODE||BMP280_FORCED_MODE||BMP280_NORMAL_MODE
+/**
+  * @brief  根据过采样配置结构体写入 BMP280 控制测量寄存器，设置温度过采样、气压过采样和工作模式。
+  * @param  Oversample_Mode 输入参数；指向过采样配置结构体，不允许为空；字段取值应来自 BMP280_P_OVERSAMPLING、BMP280_T_OVERSAMPLING 和 BMP280_WORK_MODE 枚举。
+  * @return 无返回值。
+  */
 void BMP280_Set_TemOversamp(BMP_OVERSAMPLE_MODE * Oversample_Mode)
 {
 	u8 Regtmp;
@@ -167,6 +168,11 @@ void BMP280_Set_TemOversamp(BMP_OVERSAMPLE_MODE * Oversample_Mode)
 
 
 //设置保持时间和滤波器分频因子
+/**
+  * @brief  根据配置结构体写入 BMP280 配置寄存器，设置待机时间、IIR 滤波系数和 SPI 使能位。
+  * @param  BMP_Config 输入参数；指向 BMP280 配置结构体，不允许为空；字段取值应来自 BMP280_T_SB、BMP280_FILTER_COEFFICIENT 和 ENABLE/DISABLE。
+  * @return 无返回值。
+  */
 void BMP280_Set_Standby_FILTER(BMP_CONFIG * BMP_Config)
 {
 	u8 Regtmp;
@@ -180,6 +186,11 @@ void BMP280_Set_Standby_FILTER(BMP_CONFIG * BMP_Config)
 //获取BMP当前状态
 //status_flag = BMP280_MEASURING ||
 //			 	BMP280_IM_UPDATE
+/**
+  * @brief  读取 BMP280 状态寄存器并判断指定状态位是否置位。
+  * @param  status_flag 输入参数；待检测的状态位掩码，不是指针不允许为空，常用取值为 BMP280_MEASURING 或 BMP280_IM_UPDATE。
+  * @return 返回 SET 表示指定状态位为 1，返回 RESET 表示指定状态位为 0；当前实现没有通信错误码。
+  */
 u8  BMP280_GetStatus(u8 status_flag)
 {
 	u8 flag;
@@ -191,6 +202,11 @@ u8  BMP280_GetStatus(u8 status_flag)
 /*******************主要部分*********************/
 /****************获取传感器精确值****************/
 //大气压值-Pa
+/**
+  * @brief  读取 BMP280 原始气压 ADC 数据并调用补偿函数换算为气压值。
+  * @param  无输入参数；函数通过固定 BMP280 寄存器地址读取数据，不接收外部缓冲区。
+  * @return 返回补偿后的气压数值；当前定点补偿分支返回 Q24.8 格式转换后的数值，通信失败不会产生独立错误码。
+  */
 double BMP280_Get_Pressure(void)
 {
 	uint8_t XLsb,Lsb, Msb;
@@ -205,6 +221,11 @@ double BMP280_Get_Pressure(void)
 }
 
 //温度值-℃
+/**
+  * @brief  读取 BMP280 原始温度 ADC 数据并调用补偿函数换算为温度值。
+  * @param  无输入参数；函数通过固定 BMP280 寄存器地址读取数据，不接收外部缓冲区。
+  * @return 返回补偿后的温度数值；当前定点补偿分支单位为 0.01 摄氏度，通信失败不会产生独立错误码。
+  */
 double BMP280_Get_Temperature(void)
 {
 	uint8_t XLsb,Lsb, Msb;
@@ -221,6 +242,11 @@ double BMP280_Get_Temperature(void)
 
 BMP280 bmp280_inst;
 BMP280* bmp280 = &bmp280_inst;		//这个全局结构体变量用来保存存在芯片内ROM补偿参数
+/**
+  * @brief  初始化 BMP280 传感器，初始化软件 I2C、读取温度和气压校准参数、软复位芯片并配置过采样、工作模式和滤波参数。
+  * @param  无输入参数；函数使用全局 bmp280 指针保存校准参数，不接收外部配置对象。
+  * @return 无返回值。
+  */
 void Bmp_Init(void)
 {
 	MyI2C_Init();
@@ -283,6 +309,12 @@ void Bmp_Init(void)
 	BMP280_Set_Standby_FILTER(&BMP_CONFIGStructure);
 }
 
+/**
+  * @brief  通过软件 I2C 向 BMP280 指定寄存器写入 1 字节数据。
+  * @param  RegAddress 输入参数；目标寄存器地址，不是指针不允许为空，取值应为 BMP280 支持的寄存器地址。
+  * @param  Data 输入参数；待写入的数据字节，不是指针不允许为空，取值范围为 0x00~0xFF。
+  * @return 无返回值。
+  */
 void BMP280_Write_Byte(uint8_t RegAddress, uint8_t Data)
 {
 	MyI2C_Start();						//I2C起始
@@ -295,6 +327,11 @@ void BMP280_Write_Byte(uint8_t RegAddress, uint8_t Data)
 	MyI2C_Stop();						//I2C终止
 }
 
+/**
+  * @brief  通过软件 I2C 从 BMP280 指定寄存器读取 1 字节数据。
+  * @param  RegAddress 输入参数；目标寄存器地址，不是指针不允许为空，取值应为 BMP280 支持的寄存器地址。
+  * @return 返回读取到的 8 位寄存器值，取值范围为 0x00~0xFF；当前实现没有通信失败错误码。
+  */
 uint8_t BMP280_Read_Byte(uint8_t RegAddress)
 {
 	uint8_t Data;
@@ -322,6 +359,11 @@ BMP280_S32_t t_fine;			//用于计算补偿
 #ifdef USE_FIXED_POINT_COMPENSATE
 // Returns temperature in DegC, resolution is 0.01 DegC. Output value of “5123” equals 51.23 DegC. 
 // t_fine carries fine temperature as global value
+/**
+  * @brief  使用 BMP280 官方定点公式对原始温度 ADC 值进行补偿，并更新全局 t_fine。
+  * @param  adc_T 输入参数；BMP280 原始温度 ADC 值，不是指针不允许为空，应来自温度数据寄存器组合结果。
+  * @return 返回温度补偿结果，单位为 0.01 摄氏度；例如返回 5123 表示 51.23 摄氏度，当前实现没有失败错误码。
+  */
 BMP280_S32_t bmp280_compensate_T_int32(BMP280_S32_t adc_T)
 {
 	BMP280_S32_t var1, var2, T;
@@ -335,6 +377,11 @@ BMP280_S32_t bmp280_compensate_T_int32(BMP280_S32_t adc_T)
 
 // Returns pressure in Pa as unsigned 32 bit integer in Q24.8 format (24 integer bits and 8 fractional bits).
 // Output value of “24674867” represents 24674867/256 = 96386.2 Pa = 963.862 hPa
+/**
+  * @brief  使用 BMP280 官方 64 位定点公式和全局 t_fine 对原始气压 ADC 值进行补偿。
+  * @param  adc_P 输入参数；BMP280 原始气压 ADC 值，不是指针不允许为空，应来自气压数据寄存器组合结果。
+  * @return 返回 Q24.8 格式的气压补偿值；当补偿分母为 0 时返回 0 以避免除零，当前实现没有其他错误码。
+  */
 BMP280_U32_t bmp280_compensate_P_int64(BMP280_S32_t adc_P)
 {
 	BMP280_S64_t var1, var2, p;
@@ -362,6 +409,11 @@ BMP280_U32_t bmp280_compensate_P_int64(BMP280_S32_t adc_P)
 /**************************传感器值转定点值*************************************/
 // Returns temperature in DegC, double precision. Output value of “51.23” equals 51.23 DegC.
 // t_fine carries fine temperature as global value
+/**
+  * @brief  使用 BMP280 官方浮点公式对原始温度 ADC 值进行补偿，并更新全局 t_fine。
+  * @param  adc_T 输入参数；BMP280 原始温度 ADC 值，不是指针不允许为空，应来自温度数据寄存器组合结果。
+  * @return 返回摄氏度温度值；当前实现没有失败错误码。
+  */
 double bmp280_compensate_T_double(BMP280_S32_t adc_T)
 {
 	double var1, var2, T;
@@ -374,6 +426,11 @@ double bmp280_compensate_T_double(BMP280_S32_t adc_T)
 }
 
 // Returns pressure in Pa as double. Output value of “96386.2” equals 96386.2 Pa = 963.862 hPa
+/**
+  * @brief  使用 BMP280 官方浮点公式和全局 t_fine 对原始气压 ADC 值进行补偿。
+  * @param  adc_P 输入参数；BMP280 原始气压 ADC 值，不是指针不允许为空，应来自气压数据寄存器组合结果。
+  * @return 返回 Pa 单位气压值；当补偿分母为 0 时返回 0 以避免除零，当前实现没有其他错误码。
+  */
 double bmp280_compensate_P_double(BMP280_S32_t adc_P)
 {
 	double var1, var2, p;

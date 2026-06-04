@@ -1,19 +1,22 @@
-# hWatch SE2 项目回忆笔记
+# hWatch SE2 软件工程说明
 
-这是一个基于 **STM32F103C8** 的手表/小型 OLED 交互界面工程，使用 **Keil MDK/uVision** 管理和编译。工程里集成了 STM32F10x 标准外设库、U8g2 图形库、按键中断、RTC 时钟、计时器、蜂鸣器、OLED 菜单和部分传感器驱动。
+这是一个基于 **STM32F103C8** 的手表/小型 OLED 交互界面工程，使用 **Keil MDK/uVision** 管理和编译。工程集成 STM32F10x 标准外设库、U8g2 图形库、按键中断、RTC 时钟、秒表、蜂鸣器、OLED 菜单、低功耗和 BMP280/BME280 传感器驱动。
 
-> 备注：源码里很多中文注释现在显示为乱码，大概率是当年使用 GBK/ANSI 编码保存，当前环境按 UTF-8 读取导致的。代码逻辑本身仍然能看。
+> 说明：部分旧中文注释由于历史编码问题已经乱码。后续维护以当前代码实现和新增 Doxygen 注释为准。
 
 ## 快速入口
 
-- Keil 工程文件：`Project.uvprojx`
-- 目标芯片：`STM32F103C8`
-- 输出文件名：`Project`
-- 已开启 HEX 输出：`Objects/Project.hex`
-- 入口文件：`User/main.c`
-- 主控头文件：`User/main.h`
+| 项目 | 内容 |
+| --- | --- |
+| Keil 工程 | `Project.uvprojx` |
+| 目标芯片 | `STM32F103C8` |
+| 输出文件 | `Objects/Project.hex` |
+| 程序入口 | `User/main.c` |
+| 菜单核心 | `System/MEUN.c` |
+| 主表盘 | `System/Clock.c` |
+| 按键输入 | `Hardware/Key.c` |
 
-`main()` 的流程很短：
+启动流程：
 
 ```c
 Buzzer_Init();
@@ -29,65 +32,62 @@ while (1)
 }
 ```
 
-也就是说，启动后初始化蜂鸣器、LED、按键、RTC、TIM2 计时器和 OLED，然后主循环不断执行菜单状态机并刷新屏幕。
+主循环只调用 `Menu_Key_Set()`。按键中断负责设置 `Select_flag`，菜单调度函数负责消费按键事件、切换 `func_index`、调用对应页面绘制函数，并刷新 OLED。
 
 ## 目录结构
 
 | 目录/文件 | 作用 |
 | --- | --- |
-| `User/` | 应用入口、STM32 中断模板、全局 include 配置 |
-| `Hardware/` | 板级外设驱动：按键、LED、蜂鸣器、延时、BME/BMP280 |
-| `System/` | 上层功能模块：OLED 适配、菜单、RTC 时钟、计时器、低功耗、图片资源 |
-| `U8g2/` | U8g2 图形库源码 |
+| `User/` | 应用入口、STM32 中断模板、工程公共 include |
+| `Hardware/` | 自写板级驱动：按键、LED、蜂鸣器、延时、BMP280/BME280 |
+| `System/` | 自写系统功能：OLED 适配、菜单、RTC、秒表、低功耗、位图资源 |
+| `U8g2/` | U8g2 第三方图形库源码 |
 | `Library/` | STM32F10x 标准外设库 |
-| `Start/` | Cortex-M3/STM32 启动文件和系统初始化 |
-| `Objects/` | Keil 编译输出，包含 `Project.hex` |
-| `Listings/` | Keil 编译列表/映射输出 |
+| `Start/` | 启动文件、CMSIS 和系统初始化 |
+| `Objects/` | Keil 编译输出，当前保留 `Project.hex` |
 | `DebugConfig/` | Keil 调试配置 |
 
-## 硬件连接速记
+## 硬件连接
 
-从现有代码可读出的引脚分配：
-
-| 功能 | 引脚/外设 | 说明 |
+| 功能 | 引脚/外设 | 当前用途 |
 | --- | --- | --- |
-| LED | `PC13` | 推挽输出，`LED_TurnState()` 翻转 |
-| 按键 Enter/确认 | `PA0 / EXTI0` | 普通界面为确认；计时器界面为开始/暂停 |
-| 按键 Up/上一个 | `PA1 / EXTI1` | 普通界面为上一个；计时器界面为清零 |
-| 按键 Next/下一个 | `PA2 / EXTI2` | 下一个 |
-| 按键 Back/返回 | `PA8 / EXTI8` | 返回；离开计时器时清 `Timer_Flag` |
-| 按键 Home/主页 | `PA9 / EXTI9` | 回到时钟主页 |
+| LED | `PC13` | 状态灯，支持翻转 |
+| 确认键 | `PA0 / EXTI0` | 普通页面确认；秒表页开始/暂停 |
+| 上一个键 | `PA1 / EXTI1` | 菜单上一个；秒表页清零 |
+| 下一个键 | `PA2 / EXTI2` | 菜单下一个 |
+| 返回键 | `PA8 / EXTI8` | 返回上级页面 |
+| 主页键 | `PA9 / EXTI9` | 返回时钟主界面 |
 | 蜂鸣器 | `PB8 / TIM4_CH3` | PWM 输出，约 330 Hz |
-| OLED I2C | `PB10/PB11` | 代码里有硬件 I2C2 和软件 I2C 两套实现 |
-| BMP280/BME280 I2C | `PA6/PA7` | 软件 I2C，地址 `0x77` |
-| 计时器 | `TIM2` | 10 ms tick，用于秒表计数 |
-| RTC | 内部 RTC | 当前配置走 LSI，备份寄存器 `BKP_DR1` 标记初始化 |
+| OLED | `PB10/PB11` | I2C，当前代码实际进入硬件 I2C2/SH1106 分支 |
+| BMP280/BME280 | `PA6/PA7` | 软件 I2C，地址 `0x77` |
+| 秒表 tick | `TIM2` | 10 ms 周期中断 |
+| RTC | 内部 RTC | 当前使用 LSI，`BKP_DR1` 标记是否首次初始化 |
 
-## OLED 和 U8g2
+## 菜单实现
 
-OLED 适配在 `System/OLED.c`。
+菜单采用“按键事件 + 状态表 + 页面函数”的结构。
 
-代码里存在两套 OLED 初始化路径：
+```text
+按键中断
+  -> 设置 Select_flag
+主循环 Menu_Key_Set()
+  -> 根据 Select_flag 查询 Table[]
+  -> 更新 func_index
+  -> 调用当前页面函数
+  -> u8g2_SendBuffer()
+  -> u8g2_ClearBuffer()
+```
 
-- 硬件 I2C2：`PB10/PB11`，`u8g2_Setup_sh1106_i2c_128x64_noname_f`
-- 软件 I2C：`PB10/PB11`，`u8g2_Setup_ssd1306_i2c_128x64_noname_f`
+核心变量：
 
-需要注意一个历史遗留点：`System/OLED.h` 里定义的是 `IS_HUWEI`，但 `System/OLED.c` 里判断的是 `IS_HUAWEI`。因为宏名不一致，`IS_HUAWEI` 未定义时会按 0 处理，所以当前实际会进入硬件 I2C2/SH1106 分支。若要切换 OLED 驱动方式，先修正这个宏名。
-
-菜单图标和图片资源主要在 `System/BMP_Lib.h`：
-
-- `logo[7][300]`：主菜单 7 个图标
-- `Wukong[]`：游戏页/图片页显示用的 128x64 位图
-
-## 菜单系统
-
-菜单核心在 `System/MEUN.c` 和 `System/MEUN.h`。整体是一个手写状态机：
-
-- `Select_flag` 由按键中断设置。
-- `Menu_Key_Set()` 在主循环中读取 `Select_flag`。
-- `func_index` 表示当前状态。
-- `Table[]` 是状态跳转表，包含 upper/next/enter/back 和当前状态渲染函数。
-- 每次执行当前页面函数后调用 `u8g2_SendBuffer()` 和 `u8g2_ClearBuffer()`。
+| 变量 | 说明 |
+| --- | --- |
+| `Select_flag` | 按键事件编号，由 EXTI 中断写入 |
+| `func_index` | 当前页面/动作节点编号 |
+| `Table[]` | 状态跳转表，定义 upper/next/enter/back 和页面函数 |
+| `MainMenu_Select` | 主菜单当前选中的功能项 |
+| `MainMenu_Picture_x_target` | 主菜单图标组目标 X 坐标 |
+| `Str_AllArray[]` | 二级菜单文字、选择框、滚动条和选中状态数据 |
 
 主菜单项：
 
@@ -99,109 +99,51 @@ OLED 适配在 `System/OLED.c`。
 6. `Games`
 7. `Power`
 
-当前实际比较完整的功能：
+主菜单图标来自 `System/BMP_Lib.h` 的 `logo[7][300]`。`ui_show()` 将 7 个图标按 64 像素间距横向绘制，通过调整 `MainMenu_Picture_x_target` 实现滑动动画。文字使用 `u8g2_GetStrWidth()` 计算宽度后居中。
 
-- `Clock_Display()`：显示日期、星期、小时分钟秒。
-- `Timer_Display()`：显示秒表，`PA0` 开始/暂停，`PA1` 清零。
-- `Game_Display()`：显示 `Wukong` 图片。
-- `Power_Disable()`：关闭 OLED，进入 STOP 模式。
-- `String_show()` / `Str_Operate()`：二级菜单框架和选择动画，部分内容还是测试字符串。
+二级菜单由 `String_show()` 绘制，支持：
 
-菜单动画使用 `run_str()` 做坐标缓动，常见变量：
+- 菜单文字列表；
+- 右侧滚动条；
+- 当前选中项反色选择框；
+- 选择框宽度和位置动画；
+- `Str_Operate()` 切换当前选项的 `flag`。
 
-- `MainMenu_Picture_x_target`：主菜单图标目标位置。
-- `MainMenu_Str_y_target`：菜单文字弹出动画目标位置。
-- `Str_AllArray[].fram_*`：二级菜单选择框动画。
-- `Str_AllArray[].rate_*`：右侧滚动条/进度条动画。
+## 主要功能模块
 
-## 按键行为
+### 时钟
 
-按键初始化在 `Hardware/Key.c`，使用上拉输入 + 下降沿 EXTI 中断，并在中断里 `Delay_ms(20)` 做简单消抖。
+`System/Clock.c` 的 `Clock_Display()` 是默认主界面。它读取 `RTC_SetTime`，绘制日期、星期、小时分钟和秒数。低功耗唤醒后也会在这里重新打开 OLED。
 
-`Select_flag` 编码：
+### RTC
 
-| 值 | 含义 | 来源 |
-| --- | --- | --- |
-| `1` | upper/上一个 | `PA1` |
-| `2` | next/下一个 | `PA2` |
-| `3` | enter/确认 | `PA0` |
-| `4` | back/返回 | `PA8` |
-| `5` | home/主页 | `PA9` |
+`System/MyRTC.c` 使用 STM32 内部 RTC。首次运行时写入默认时间并在 `BKP_DR1` 写入 `0xA5A5`，后续启动只同步和读取 RTC。当前默认使用 LSI，时间戳计算中显式处理 UTC+8 偏移。
 
-计时器界面比较特殊：
+### 秒表
 
-- `PA0` 不再进入菜单，而是启动/暂停 `TIM2`。
-- `PA1` 清空 `TIMER_Structure`。
-- `PA8/PA9` 离开计时器界面时清除 `Timer_Flag`。
+`System/Timer.c` 使用 TIM2 产生 10 ms 中断。`TIMER_Structure.Ms` 实际表示百分之一秒计数，显示格式为 `MM:SS:CC`。进入秒表页面后，`PA0` 控制启动/暂停，`PA1` 清零。
 
-## RTC 时钟
+### OLED
 
-RTC 逻辑在 `System/MyRTC.c`。
+`System/OLED.c` 提供 U8g2 与 STM32 I2C 的适配层。当前存在历史宏名问题：头文件定义 `IS_HUWEI`，源文件判断 `IS_HUAWEI`。由于 `IS_HUAWEI` 未定义时按 0 处理，实际会编译硬件 I2C2/SH1106 分支。
 
-- 默认初始时间：`2024-08-21 23:59:55`，星期值为 `4`。
-- 当前 `#define LSI 1`，走内部 LSI。
-- 首次初始化通过 `BKP_DR1 != 0xA5A5` 判断。
-- `MyRTC_SetTime()` 使用 `mktime()` 转 Unix 时间戳，再减去 8 小时时区偏移。
-- `MyRTC_ReadTime()` 读取 RTC counter，再加回 8 小时时区偏移。
+### BMP280/BME280
 
-如果以后要改初始时间，直接改 `RTC_SetTime` 的全局初始化值，或加一个时间设置菜单。
+`Hardware/BME280.c` 实现软件 I2C、BMP280 寄存器读写、校准参数读取、温度和气压补偿。当前 `main()` 尚未调用 `Bmp_Init()`，Weather 页面也尚未接入传感器显示。
 
-## 计时器/秒表
+### 低功耗
 
-秒表在 `System/Timer.c`。
+`System/PWR.c` 的 `Power_Disable()` 会清屏、关闭 OLED、进入 STOP 模式，唤醒后调用 `SystemInit()` 恢复系统时钟。
 
-- `TIM2` 时钟来自 APB1。
-- 分频 `6400 - 1`，自动重装 `100 - 1`。
-- 按 72 MHz 系统时钟估算，中断周期约为 10 ms。
-- `TIMER_Structure` 里 `Ms` 实际表示百分之一秒，不是真正毫秒。
-- `Timer_Display()` 格式：`MM:SS:CC`。
+## 构建与烧录
 
-注意：`TIM2` 初始化后只配置中断，没有在 `Timer_Init()` 里启动，进入秒表页后由按键控制 `TIM_Cmd(TIM2, ENABLE/DISABLE)`。
-
-## 蜂鸣器
-
-蜂鸣器在 `Hardware/Buzzer.c`。
-
-- 使用 `TIM4_CH3`，输出到 `PB8`。
-- `TIM_Period = 1000000 / 330 - 1`
-- `TIM_Prescaler = 64 - 1`
-- `Buzzer_State(1)` 打开 PWM，`Buzzer_State(0)` 关闭。
-
-菜单二级选择里曾经预留了蜂鸣器开关逻辑，但目前看起来还在测试阶段。
-
-## 低功耗
-
-低功耗入口在 `System/PWR.c`：
-
-```c
-u8g2_ClearDisplay(&u8g2);
-u8g2_SetPowerSave(&u8g2, 1);
-PWR_EnterSTOPMode(PWR_Regulator_ON, PWR_STOPEntry_WFI);
-SystemInit();
-```
-
-进入 Power 菜单后会关闭 OLED 并进入 STOP 模式，唤醒后调用 `SystemInit()` 恢复系统时钟。`Clock_Display()` 中如果发现 `Power_Flag == 0`，会重新打开 OLED。
-
-## BMP280/BME280
-
-`Hardware/BME280.c/.h` 实现了一个 BMP280 风格的温压传感器驱动：
-
-- 软件 I2C：`PA6 = SCL`，`PA7 = SDA`
-- 地址：`0x77`
-- 可读取温度和气压补偿值
-- `Bmp_Init()` 会读取校准参数并配置过采样/滤波
-
-但当前 `main()` 没有调用 `Bmp_Init()`，菜单里的 `Weather` 也还没有接上传感器显示逻辑，所以这部分更像是已写好但未整合完成的功能。
-
-## 构建和烧录
-
-1. 用 Keil MDK/uVision 打开 `Project.uvprojx`。
+1. 使用 Keil MDK/uVision 打开 `Project.uvprojx`。
 2. 确认目标为 `STM32F103C8`。
-3. 编译 Target 1。
-4. 输出 HEX 文件在 `Objects/Project.hex`。
-5. 使用 ST-Link/J-Link/串口 ISP 等方式烧录 HEX。
+3. 编译 `Target 1`。
+4. 生成的 HEX 位于 `Objects/Project.hex`。
+5. 使用 ST-Link/J-Link/串口 ISP 烧录。
 
-工程包含路径已经配置在 Keil 中：
+工程包含路径：
 
 ```text
 .\Start;.\User;.\Library;.\Hardware;.\System;.\U8g2
@@ -213,24 +155,31 @@ SystemInit();
 USE_STDPERIPH_DRIVER
 ```
 
-## 以后继续开发时优先看的文件
+## 注释维护规范
 
-- `User/main.c`：系统启动顺序。
-- `Hardware/Key.c`：按键和 `Select_flag` 来源。
-- `System/MEUN.c`：菜单跳转、动画、页面调度。
-- `System/Clock.c`：主表盘显示。
-- `System/Timer.c`：秒表逻辑。
-- `System/OLED.c`：OLED 驱动适配。
-- `System/BMP_Lib.h`：菜单图标和位图。
-- `Hardware/BME280.c`：温压传感器驱动。
+自写函数使用中文 Doxygen 风格注释：
 
-## 明显的待整理点
+```c
+/**
+  * @brief  根据当前 RTC 时间绘制时钟主界面，并在低功耗唤醒后恢复 OLED 显示。
+  * @param  无输入参数；函数通过全局 RTC_SetTime 和 u8g2 访问当前时间与显示缓冲区，不允许传入空对象。
+  * @return 无返回值。
+  */
+```
 
-- `MEUN` 应该是 `MENU` 的拼写误差，但当前文件名和 include 都依赖这个名字，改名需要全局同步。
-- `IS_HUWEI` / `IS_HUAWEI` 宏名不一致，影响 OLED 分支选择。
-- `Timer_Flag` 进入计时器页后只会置 1，离开时由部分按键清 0，后续可以整理成页面进入/退出钩子。
-- `Timer.c` 里的 `Ms` 实际是 10 ms 计数，命名可改成 `Centisecond` 或 `Cs`。
-- `BME280` 文件名和内部 `BMP280` 命名混用，实际代码更偏 BMP280。
-- 二级菜单 `Str_AllArray` 里很多字符串还是测试数据，如 `aetting`、`cetting`。
-- `Calendar`、`Weather`、`Games` 目前大多是占位或图片展示，功能还没完全接上。
-- 中文注释建议统一转成 UTF-8，避免以后继续乱码。
+要求：
+
+- `@brief` 必须描述当前函数体实际做的事。
+- 每个形参必须单独使用 `@param` 描述含义、输入/输出属性、是否允许为空和关键取值约束。
+- 无形参函数写清“无输入参数”。
+- `@return` 必须说明返回值含义；`void` 函数写“无返回值”。
+- 不修改代码逻辑时，只更新注释和 README。
+
+## 后续建议
+
+- 修正 `MEUN` 文件名拼写需要谨慎同步 include 和 Keil 工程配置。
+- 修正 `IS_HUWEI` / `IS_HUAWEI` 宏名不一致问题。
+- 将 `Timer_Flag` 这类页面状态整理成明确的页面进入/退出流程。
+- 将 Weather 页面接入 `Bmp_Init()`、温度和气压读取。
+- 清理二级菜单中的测试字符串，如 `aetting`、`cetting`。
+- 将仍然乱码的历史注释逐步替换为 UTF-8 中文 Doxygen 注释。

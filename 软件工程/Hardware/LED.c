@@ -1,5 +1,10 @@
 #include "stm32f10x.h"                  // Device header
 
+/**
+  * @brief  初始化板载 LED 使用的 PC13 引脚，将其配置为 50MHz 推挽输出并默认拉低。
+  * @param  无输入参数；函数内部固定使用 GPIOC 和 GPIO_Pin_13，不接收可为空的配置指针。
+  * @return 无返回值。
+  */
 void LED_Init(void)
 {
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);	//开启GPIOA的时钟
@@ -17,6 +22,11 @@ void LED_Init(void)
 	GPIO_ResetBits(GPIOC, GPIO_Pin_13);
 }
 
+/**
+  * @brief  读取 PC13 当前输出状态并执行翻转，用于切换板载 LED 的亮灭状态。
+  * @param  无输入参数；函数内部直接访问 GPIOC 输出寄存器，不依赖外部传入对象。
+  * @return 无返回值。
+  */
 void LED_TurnState(void)
 {
 	if (GPIO_ReadOutputDataBit(GPIOC, GPIO_Pin_13) == 0)

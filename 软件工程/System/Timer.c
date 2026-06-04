@@ -14,6 +14,11 @@ char Timer[10];
 TIMER_Typedef TIMER_Structure = {0, 0, 0};
 
 
+/**
+  * @brief  初始化 TIM2 为 10ms 周期更新中断，用作秒表的百分之一秒计时基准，但初始化后不立即启动计数。
+  * @param  无输入参数；函数固定配置 TIM2 和 TIM2_IRQn，不接收外部配置结构体。
+  * @return 无返回值。
+  */
 void Timer_Init(void)
 {
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
@@ -47,6 +52,11 @@ void Timer_Init(void)
 	NVIC_Init(&NVIC_InitStructure);
 }
 
+/**
+  * @brief  TIM2 更新中断服务函数，每次中断累加百分之一秒计数，并在达到 100 个 tick 后进位到秒，秒达到 60 后进位到分钟。
+  * @param  无输入参数；中断入口由 NVIC 调用，函数通过全局 TIMER_Structure 输出计时结果。
+  * @return 无返回值。
+  */
 void TIM2_IRQHandler(void)
 {
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
@@ -65,6 +75,11 @@ void TIM2_IRQHandler(void)
 	}
 }
 
+/**
+  * @brief  绘制秒表页面，将 TIMER_Structure 中的分钟、秒和百分之一秒格式化为 MM:SS:CC 并居中显示。
+  * @param  无输入参数；函数通过全局 TIMER_Structure、Timer_Flag 和 u8g2 访问计时状态与显示缓冲区。
+  * @return 无返回值。
+  */
 void Timer_Display(void)
 {
 	if (Timer_Flag == 0)

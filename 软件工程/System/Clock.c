@@ -6,6 +6,11 @@
 extern uint8_t Power_Flag;
 extern u8g2_t u8g2;
 
+/**
+  * @brief  读取 RTC 当前时间并绘制时钟主界面，包括日期、星期、时分和秒；若此前进入过低功耗关闭 OLED，则先恢复 OLED 显示。
+  * @param  无输入参数；函数通过全局 RTC_SetTime、Power_Flag 和 u8g2 访问 RTC 数据与显示缓冲区，不接收可为空指针。
+  * @return 无返回值。
+  */
 void Clock_Display(void)
 {
 	extern RTC_Time RTC_SetTime;

@@ -7,6 +7,11 @@ uint16_t RetryCnt = 0;
 
 RTC_Time RTC_SetTime = {2024, 8, 21, 23, 59, 55, 4};
 
+/**
+  * @brief  初始化 STM32 内部 RTC 和备份域，首次运行时配置 LSI/LSE 时钟源、预分频器和默认时间，后续运行只恢复同步并保持已有计数值。
+  * @param  无输入参数；函数固定访问 RCC、PWR、BKP 和 RTC 外设寄存器，不接收外部配置指针。
+  * @return 无返回值。
+  */
 void MyRTC_Init(void)
 {
 	/*开启时钟*/
@@ -76,6 +81,11 @@ void MyRTC_Init(void)
 	}
 }
 
+/**
+  * @brief  将全局 RTC_SetTime 结构体中的年月日时分秒转换为 RTC 计数器秒值，并写入硬件 RTC。
+  * @param  无输入参数；输入数据来自全局 RTC_SetTime，不接收指针；RTC_SetTime 的年月日时分秒应构成有效本地时间。
+  * @return 无返回值。
+  */
 void MyRTC_SetTime(void)
 {
 	time_t time_cnt;
@@ -95,6 +105,11 @@ void MyRTC_SetTime(void)
 	RTC_WaitForLastTask();
 }
 
+/**
+  * @brief  从硬件 RTC 计数器读取当前秒值，按 UTC+8 偏移转换为本地时间，并更新全局 RTC_SetTime。
+  * @param  无输入参数；函数直接读取 RTC 计数器并写入全局 RTC_SetTime，不接收可为空对象。
+  * @return 无返回值。
+  */
 void MyRTC_ReadTime(void)
 {
 	time_t time_cnt;

@@ -3,6 +3,11 @@
 #include "Delay.h"
 
 #if	IS_HUAWEI == 0
+/**
+  * @brief  初始化 OLED 使用的硬件 I2C2，将 PB10/PB11 配置为复用开漏并配置 I2C2 为 400kHz 主机模式。
+  * @param  无输入参数；函数固定配置 GPIOB、PB10、PB11 和 I2C2，不接收外部配置对象。
+  * @return 无返回值。
+  */
 void HW_I2C_Init(void)
 {
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
@@ -24,6 +29,14 @@ void HW_I2C_Init(void)
 	I2C_Init(I2C2, &I2C_InitStructure);
 }
 
+/**
+  * @brief  处理 U8g2 硬件 I2C 模式下的 GPIO 与延时回调消息，当前主要响应毫秒延时和默认 GPIO 结果。
+  * @param  u8x8 输入/输出参数；U8g2 底层上下文指针，由 U8g2 调用传入，不允许为空。
+  * @param  msg 输入参数；U8g2 回调消息类型，不是指针不允许为空，取值必须为 U8X8_MSG_* 枚举之一。
+  * @param  arg_int 输入参数；消息附带的整数参数，含义由 msg 决定，不是指针不允许为空。
+  * @param  arg_ptr 输入/输出参数；消息附带的数据指针，当前实现未解引用，可为空。
+  * @return 固定返回 1，表示消息已按当前适配层能力处理或以默认成功方式响应；当前实现没有失败错误码。
+  */
 uint8_t u8x8_gpio_and_delay_hw(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
     switch (msg) {
         case U8X8_MSG_DELAY_100NANO: // delay arg_int * 100 nano seconds
@@ -58,6 +71,14 @@ uint8_t u8x8_gpio_and_delay_hw(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void 
     return 1;
 }
 
+/**
+  * @brief  处理 U8g2 硬件 I2C 字节传输回调，完成 I2C 初始化、起始条件、地址发送、数据发送和停止条件。
+  * @param  u8x8 输入/输出参数；U8g2 底层上下文指针，当前实现未直接使用但由 U8g2 保证传入，不允许为空。
+  * @param  msg 输入参数；U8g2 字节回调消息类型，不是指针不允许为空，必须为 U8X8_MSG_BYTE_* 相关取值。
+  * @param  arg_int 输入参数；当 msg 为 U8X8_MSG_BYTE_SEND 时表示待发送字节数，不是指针不允许为空。
+  * @param  arg_ptr 输入参数；当 msg 为 U8X8_MSG_BYTE_SEND 时指向待发送数据缓冲区，发送数据时不允许为空，其他消息可为空。
+  * @return 返回 1 表示当前消息处理成功，返回 0 表示遇到未支持的消息类型。
+  */
 uint8_t u8x8_byte_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
     uint8_t* data = (uint8_t*) arg_ptr;
     switch(msg) {
@@ -93,6 +114,11 @@ uint8_t u8x8_byte_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_p
     return 1;
 }
 
+/**
+  * @brief  使用 SH1106 128x64 I2C 驱动配置 U8g2 上下文，初始化显示器、退出省电模式并清空绘图缓冲区。
+  * @param  u8g2 输入/输出参数；指向待初始化的 U8g2 显示对象，不允许为空，调用者需保证对象生命周期覆盖后续显示过程。
+  * @return 无返回值。
+  */
 void u8g2_Init(u8g2_t *u8g2)
 {
 	u8g2_Setup_sh1106_i2c_128x64_noname_f(u8g2, U8G2_R0, u8x8_byte_hw_i2c, u8x8_gpio_and_delay_hw);
@@ -101,6 +127,11 @@ void u8g2_Init(u8g2_t *u8g2)
 	u8g2_ClearBuffer(u8g2);
 }
 #else
+/**
+  * @brief  设置软件 I2C 的 OLED SCL 引脚电平。
+  * @param  BitValue 输入参数；0 表示拉低 PB10，非 0 表示释放/置高 PB10，不是指针不允许为空。
+  * @return 无返回值。
+  */
 void OLED_W_SCL(uint8_t BitValue)
 {
 	/*根据BitValue的值，将SCL置高电平或者低电平*/
@@ -111,12 +142,9 @@ void OLED_W_SCL(uint8_t BitValue)
 }
 
 /**
-  * 函    数：OLED写SDA高低电平
-  * 参    数：要写入SDA的电平值，范围：0/1
-  * 返 回 值：无
-  * 说    明：当上层函数需要写SDA时，此函数会被调用
-  *           用户需要根据参数传入的值，将SDA置为高电平或者低电平
-  *           当参数传入0时，置SDA为低电平，当参数传入1时，置SDA为高电平
+  * @brief  设置软件 I2C 的 OLED SDA 引脚电平。
+  * @param  BitValue 输入参数；0 表示拉低 PB11，非 0 表示释放/置高 PB11，不是指针不允许为空。
+  * @return 无返回值。
   */
 void OLED_W_SDA(uint8_t BitValue)
 {
@@ -128,11 +156,9 @@ void OLED_W_SDA(uint8_t BitValue)
 }
 
 /**
-  * 函    数：OLED引脚初始化
-  * 参    数：无
-  * 返 回 值：无
-  * 说    明：当上层函数需要初始化时，此函数会被调用
-  *           用户需要将SCL和SDA引脚初始化为开漏模式，并释放引脚
+  * @brief  初始化 OLED 软件 I2C 引脚，将 PB10/PB11 配置为开漏输出并释放总线为高电平。
+  * @param  无输入参数；函数固定配置 GPIOB、PB10 和 PB11，不接收外部配置对象。
+  * @return 无返回值。
   */
 void SW_I2C_Init(void)
 {
@@ -160,6 +186,14 @@ void SW_I2C_Init(void)
 	OLED_W_SDA(1);
 }
 
+/**
+  * @brief  处理 U8g2 软件 I2C 模式下的 GPIO 与延时回调消息，包括初始化、毫秒延时、I2C 延时以及 SCL/SDA 电平控制。
+  * @param  u8x8 输入/输出参数；U8g2 底层上下文指针，由 U8g2 调用传入，不允许为空。
+  * @param  msg 输入参数；U8g2 回调消息类型，不是指针不允许为空，取值必须为 U8X8_MSG_* 枚举之一。
+  * @param  arg_int 输入参数；消息附带整数，GPIO 消息中表示目标电平，延时消息中表示延时时间，不是指针不允许为空。
+  * @param  arg_ptr 输入/输出参数；当前实现未解引用，可为空。
+  * @return 固定返回 1，表示消息已按当前适配层能力处理或以默认成功方式响应；当前实现没有失败错误码。
+  */
 uint8_t u8x8_gpio_and_delay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
   switch(msg)
@@ -220,6 +254,11 @@ uint8_t u8x8_gpio_and_delay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *ar
   return 1;
 }
 
+/**
+  * @brief  使用 SSD1306 128x64 软件 I2C 驱动配置 U8g2 上下文，初始化显示器、退出省电模式并清空绘图缓冲区。
+  * @param  u8g2 输入/输出参数；指向待初始化的 U8g2 显示对象，不允许为空，调用者需保证对象生命周期覆盖后续显示过程。
+  * @return 无返回值。
+  */
 void u8g2_Init(u8g2_t *u8g2)
 {
 	u8g2_Setup_ssd1306_i2c_128x64_noname_f(u8g2, U8G2_R0, u8x8_byte_sw_i2c, u8x8_gpio_and_delay);  // 初始化 u8g2 结构体

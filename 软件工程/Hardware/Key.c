@@ -9,6 +9,11 @@ extern TIMER_Typedef TIMER_Structure;
 extern int MainMenu_Str_y;
 uint8_t Timer_State;
 
+/**
+  * @brief  初始化 PA0、PA1、PA2、PA8、PA9 为上拉输入，并配置为下降沿 EXTI 中断，用于产生菜单和秒表控制按键事件。
+  * @param  无输入参数；函数固定配置 GPIOA、AFIO、EXTI0/1/2/8/9 和对应 NVIC 通道，不接收外部配置对象。
+  * @return 无返回值。
+  */
 void Key_Init(void)
 {
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
@@ -53,6 +58,11 @@ void Key_Init(void)
 	NVIC_Init(&NVIC_InitStructure);
 }
 
+/**
+  * @brief  PA0 确认键中断服务函数，普通页面设置 Select_flag=3，秒表页面切换 TIM2 启停状态。
+  * @param  无输入参数；中断入口由 NVIC 调用，按键状态通过 GPIOA Pin0 读取，输出为全局 Select_flag 或 Timer_State。
+  * @return 无返回值。
+  */
 void EXTI0_IRQHandler(void)
 {
  	if (EXTI_GetITStatus(EXTI_Line0) == SET)
@@ -83,6 +93,11 @@ void EXTI0_IRQHandler(void)
 	}
 }
 
+/**
+  * @brief  PA1 上一个键中断服务函数，普通页面设置 Select_flag=1，秒表页面清零分钟、秒和百分之一秒计数。
+  * @param  无输入参数；中断入口由 NVIC 调用，按键状态通过 GPIOA Pin1 读取，输出为全局 Select_flag 或 TIMER_Structure。
+  * @return 无返回值。
+  */
 void EXTI1_IRQHandler(void)
 {
 	if (EXTI_GetITStatus(EXTI_Line1) == SET)
@@ -105,6 +120,11 @@ void EXTI1_IRQHandler(void)
 	}
 }
 
+/**
+  * @brief  PA2 下一个键中断服务函数，消抖确认后设置 Select_flag=2。
+  * @param  无输入参数；中断入口由 NVIC 调用，按键状态通过 GPIOA Pin2 读取，输出为全局 Select_flag。
+  * @return 无返回值。
+  */
 void EXTI2_IRQHandler(void)
 {
 	if (EXTI_GetITStatus(EXTI_Line2) == SET)
@@ -118,6 +138,11 @@ void EXTI2_IRQHandler(void)
 	}
 }
 
+/**
+  * @brief  PA8/PA9 组合中断服务函数，PA8 触发返回事件 Select_flag=4，PA9 触发主页事件 Select_flag=5，并在离开秒表时清除 Timer_Flag。
+  * @param  无输入参数；中断入口由 NVIC 调用，分别读取 GPIOA Pin8 和 Pin9，输出为全局 Select_flag 与 Timer_Flag。
+  * @return 无返回值。
+  */
 void EXTI9_5_IRQHandler(void)
 {
 	if (EXTI_GetITStatus(EXTI_Line8) == SET)

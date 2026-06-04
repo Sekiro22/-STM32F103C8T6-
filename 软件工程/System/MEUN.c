@@ -14,6 +14,14 @@ extern uint8_t Select_flag;
 int speed = 4;
 int c_speed = 2;
 
+/**
+  * @brief  将当前坐标值按指定速度逐步移动到目标坐标，用于菜单图标、文字、选择框和滚动条的缓动动画。
+  * @param  now 输入/输出参数；指向当前坐标值，函数会直接修改其内容，不允许为空，否则会发生非法访问。
+  * @param  trag 输入参数；指向目标坐标值，函数只读取其内容，不允许为空，目标值可大于、小于或等于当前值。
+  * @param  speed 输入参数；普通移动步长，不是指针不允许为空，建议为正数，值越大动画越快。
+  * @param  c_speed 输入参数；接近目标时使用的最小步长，不是指针不允许为空，建议为正数，用于避免尾段移动过慢。
+  * @return 返回 1 表示当前值已经等于目标值，返回 0 表示本次调用仍在移动过程中；当前实现没有错误码。
+  */
 int run_str(int *now,int *trag,const int speed,const int c_speed)
 {
 	int temp = 0;
@@ -99,6 +107,11 @@ int func_index = 0;
 int func_index_last = 0;
 void (*current_operation_index)(void);
 
+/**
+  * @brief  绘制主菜单横向图标轮播和当前选中项文字，并更新图标、文字和提示条坐标以形成滑动动画。
+  * @param  无输入参数；函数通过全局 MainMenu_* 状态、logo 位图数组和 u8g2 显示对象完成绘制，不接收外部指针。
+  * @return 无返回值。
+  */
 void ui_show(void)
 {
 	char i = 0;
@@ -125,6 +138,11 @@ void ui_show(void)
 	run_str(&MainMenu_Rec_x,&MainMenu_Rec_x_target,speed,c_speed);//弹出动画
 }
 
+/**
+  * @brief  菜单主调度函数，读取按键中断写入的 Select_flag，根据 Table 状态表更新 func_index，并调用当前页面或动作函数后刷新 OLED 缓冲区。
+  * @param  无输入参数；函数通过全局 Select_flag、func_index、Table 和 u8g2 完成状态转换与显示输出。
+  * @return 无返回值。
+  */
 void Menu_Key_Set(void)
 {	
 	func_index_last = func_index;
@@ -159,6 +177,11 @@ void Menu_Key_Set(void)
 	u8g2_ClearBuffer(&u8g2);
 }
 
+/**
+  * @brief  处理菜单“下一个/坐标增加”动作，主菜单中切换到右侧图标，二级菜单中下移选择项并更新选择框和滚动条目标坐标。
+  * @param  无输入参数；函数通过全局 func_index_last、MainMenu_Select、MainMenu_* 和 Str_AllArray 修改菜单状态。
+  * @return 无返回值。
+  */
 void Str_Coordinate_Add(void)
 {
 	//对主界面坐标操作
@@ -232,6 +255,11 @@ void Str_Coordinate_Add(void)
 	
 }
 
+/**
+  * @brief  处理菜单“上一个/坐标减少”动作，主菜单中切换到左侧图标，二级菜单中上移选择项并更新选择框和滚动条目标坐标。
+  * @param  无输入参数；函数通过全局 func_index_last、MainMenu_Select、MainMenu_* 和 Str_AllArray 修改菜单状态。
+  * @return 无返回值。
+  */
 void Str_Coordinate_Decrease(void)
 {
 	if (func_index_last == Y0)//对主菜单坐标进行操作
@@ -298,6 +326,11 @@ void Str_Coordinate_Decrease(void)
 	
 }
 
+/**
+  * @brief  绘制当前一级页面的二级字符串菜单，包括菜单项、复选框、右侧滚动条和反色选择框，并按目标坐标更新动画。
+  * @param  无输入参数；函数根据全局 func_index 选择 Str_AllArray 中的数据源，通过 u8g2 绘制页面。
+  * @return 无返回值。
+  */
 void String_show(void)
 {
 	char i = 0;
@@ -370,6 +403,11 @@ void String_show(void)
 }
 
 //	二级菜单操作各种选定执行,将对应一级菜单里面的MainSet_Str的flag就可以得知点击了哪个
+/**
+  * @brief  执行二级菜单确认动作，切换当前选中菜单项的 flag 状态，并将 func_index 恢复到确认前所在页面。
+  * @param  无输入参数；函数通过全局 func_index_last、func_index 和 Str_AllArray 定位并修改当前选项。
+  * @return 无返回值。
+  */
 void Str_Operate(void)
 {
 	int index = func_index_last - UI_Next_Addr;
@@ -386,6 +424,11 @@ void Str_Operate(void)
 	func_index = func_index_last;
 }
 
+/**
+  * @brief  绘制游戏/图片页面，清屏后将 Wukong 128x64 位图直接显示到 OLED。
+  * @param  无输入参数；函数通过全局 u8g2 和 Wukong 位图数组绘制，不接收可为空对象。
+  * @return 无返回值。
+  */
 void Game_Display(void)
 {
 	u8g2_ClearBuffer(&u8g2);
